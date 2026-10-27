@@ -3,25 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>タスク管理アプリ</title>
+  <title>タスク管理アプリ（API連携版）</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
-    <h1>タスク管理アプリ</h1>
+    <h1>タスク管理アプリ（API連携版）</h1>
+
+    <!-- ローディング表示 -->
+    <div id="loading" class="loading hidden">通信中...</div>
+
+    <!-- エラー表示 -->
+    <div id="error" class="error hidden"></div>
 
     <!-- タスク追加フォーム -->
     <form id="taskForm" class="task-form">
       <input type="text" id="taskInput" placeholder="タスクを入力..." autocomplete="off">
       <button type="submit" class="btn btn-add">追加</button>
     </form>
-
-    <!-- フィルタータブ -->
-    <div class="filters">
-      <button class="filter active" data-filter="all">すべて</button>
-      <button class="filter" data-filter="active">未完了</button>
-      <button class="filter" data-filter="completed">完了済み</button>
-    </div>
 
     <!-- タスク一覧（イベントデリゲーションの親要素） -->
     <ul id="taskList" class="task-list"></ul>

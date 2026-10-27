@@ -5,7 +5,7 @@
 /*===============================================
  リセットCSS
  ===============================================*/
-*, *::before, *::after {
+ *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -40,6 +40,31 @@ h1 {
   color: #a0aec0;
   margin-bottom: 24px;
   text-align: center;
+}
+
+/*===============================================
+ ローディング・エラー表示（API連携版で追加）
+ ===============================================*/
+.hidden {
+  display: none;
+}
+
+.loading {
+  text-align: center;
+  color: #a0aec0;
+  font-size: 0.85rem;
+  padding: 6px;
+  margin-bottom: 8px;
+}
+
+.error {
+  text-align: center;
+  color: #fff;
+  background: #e94560;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  padding: 10px;
+  margin-bottom: 16px;
 }
 
 /*===============================================
@@ -80,36 +105,6 @@ h1 {
 
 .btn-add {
   padding: 10px 20px;
-  background: #e94560;
-  color: #fff;
-  font-weight: bold;
-}
-
-/*===============================================
- フィルタータブ
- ===============================================*/
-.filters {
-  display: flex;
-  background: #0f3460;
-  border-radius: 8px;
-  padding: 4px;
-  margin-bottom: 16px;
-  gap: 4px;
-}
-
-.filter {
-  flex: 1;
-  padding: 8px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: #a0aec0;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.filter.active {
   background: #e94560;
   color: #fff;
   font-weight: bold;

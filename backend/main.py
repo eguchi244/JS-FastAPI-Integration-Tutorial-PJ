@@ -1,9 +1,10 @@
 """
-タスク管理API（FastAPI + SQLAlchemy + SQLite）
+タスク管理API（フロント・バック統合版）
 """
 from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
@@ -102,10 +103,26 @@ def get_task(task_id: int, db: Session) -> TaskModel:
     return task
 
 # ==========================================
-# エンドポイント
+# エントリーポイント・CORS設定
 # ==========================================
 
-app = FastAPI(title="タスク管理API", version="1.0.0")
+app = FastAPI(title="タスク管理API（統合版）", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5500",  # Live Server（IPアドレス形式）
+        "http://localhost:5500",  # Live Server（ホスト名形式）— ブラウザによって異なるため両方指定
+        "http://127.0.0.1:5510",  # 開発機によっては5500がOSにブロックされるため代替ポートも許可
+        "http://localhost:5510",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ==========================================
+# エンドポイント
+# ==========================================
 
 @app.get("/tasks", response_model=list[Task])
 def read_tasks(completed: bool | None = None, db: Session = Depends(get_db)):
