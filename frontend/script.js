@@ -132,6 +132,56 @@ async function deleteTask(id) {
 }
 
 // ==========================================
+// ローディング・エラー表示
+// ==========================================
+
+/**
+ * ローディング表示（通信中...）の表示・非表示を切り替える
+ *
+ * @param {boolean} isLoading - 通信中ならtrue、通信が終わっていればfalse
+ */
+function showLoading(isLoading) {
+  loading.classList.toggle('hidden', !isLoading);
+}
+
+/**
+ * エラーメッセージを画面に表示する
+ *
+ * @param {string} message - 画面に表示する文言
+ */
+function showError(message) {
+  errorBox.textContent = message;
+  errorBox.classList.remove('hidden');
+}
+
+/**
+ * エラー表示を消す
+ */
+function clearError() {
+  errorBox.classList.add('hidden');
+}
+
+/**
+ * API呼び出しを包んで、ローディング表示とエラー処理を一元化する
+ *
+ * @param {() => Promise<void>} fn - 包んで実行するAPI呼び出し
+ */
+async function apiCall(fn) {
+  try {
+    clearError();
+    showLoading(true);
+    await fn();
+  } catch (error) {
+    // 通信に失敗した場合はUIにも表示する（コンソールだけではユーザーが気づけない）
+    console.error(`予期しないエラー: ${error.name} ${error.message}`);
+    showError('サーバーとの通信に失敗しました');
+  } finally {
+    // NOTE: 成功・例外のどちらの経路でも必ずローディング表示を消す
+    showLoading(false);
+  }
+}
+
+// ==========================================
 // DOM 描画
 // ==========================================
 
@@ -209,8 +259,11 @@ function handleTaskSubmit(event) {
   if (title === '') return;
 
   // タスクリストを作成・保存して描画する
-  addTask(title).then(() => {
+  apiCall(async () => {
+    await addTask(title);
+
     // タスク入力欄を空にしてフォーカスする
+    // NOTE: クリアは追加が成功した後に行う（失敗時にはクリア処理はされない）
     taskInput.value = '';
     taskInput.focus();
   });
@@ -229,13 +282,11 @@ function handleTaskListClick(event) {
   // idが存在しない場合は何もしない
   if (!id) return;
 
-  // actionに応じた状態更新を実行する
+  // actionに応じたAPI呼び出しを実行する
   if (action === 'delete') {
-    deleteTask(id);
+    apiCall(() => deleteTask(id));
   } else if (action === 'toggle') {
-    toggleTask(id, event.target.checked);
-  } else {
-    return;
+    apiCall(() => toggleTask(id, event.target.checked));
   }
 }
 
@@ -253,4 +304,4 @@ taskList.addEventListener('click', handleTaskListClick);
 // 初期表示（ページ読み込み時にAPIから一覧取得）
 // ==========================================
 
-fetchTasks();
+apiCall(fetchTasks);
