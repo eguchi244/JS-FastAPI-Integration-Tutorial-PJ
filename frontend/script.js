@@ -43,6 +43,9 @@ const taskCount = document.getElementById('taskCount');
 
 // ==========================================
 // API通信
+//
+// NOTE: 書き込み系（追加・完了切替・削除）は最後に必ずfetchTasksで取り直します
+// フロント側の配列も更新して画面を合わせると、真実のソースがサーバーとフロントの2つになるためです
 // ==========================================
 
 /**
@@ -64,6 +67,68 @@ async function fetchTasks() {
 
   // 画面を再描画
   render(tasks);
+}
+
+/**
+ * タスクを新規作成して一覧を取り直す
+ *
+ * @param {string} title - タスクのタイトル
+ * @throws {Error} レスポンスが失敗ステータス（res.okがfalse）の場合
+ */
+async function addTask(title) {
+  // FastAPIからタスク新規作成を取得
+  const res = await fetch(`${API_BASE}/tasks`, {
+    method  : 'POST',
+    headers : { 'Content-Type': 'application/json' },
+    body    : JSON.stringify({ title }),
+  });
+
+  // レスポンス結果を判定
+  if (!res.ok) throw new Error(`POST /tasks failed: ${res.status}`);
+
+  // タスク一覧を再取得して再描画
+  await fetchTasks();
+}
+
+/**
+ * タスクの完了状態を更新して一覧を取り直す
+ *
+ * NOTE: 送るのは completed だけの部分更新です（APIのTaskUpdateは全項目が任意のため）
+ *
+ * @param {string} id - タスクのID（data-id属性から取得するため文字列）
+ * @param {boolean} completed - 更新後の完了状態
+ * @throws {Error} レスポンスが失敗ステータス（res.okがfalse）の場合
+ */
+async function toggleTask(id, completed) {
+  // FastAPIから指定タスクの更新を取得
+  const res = await fetch(`${API_BASE}/tasks/${id}`, {
+    method  : 'PUT',
+    headers : { 'Content-Type': 'application/json' },
+    body    : JSON.stringify({ completed }),
+  });
+
+  // レスポンス結果を判定
+  if (!res.ok) throw new Error(`PUT /tasks/${id} failed: ${res.status}`);
+
+  // タスク一覧を再取得して再描画
+  await fetchTasks();
+}
+
+/**
+ * 指定IDのタスクを削除して一覧を取り直す
+ *
+ * @param {string} id - タスクのID（data-id属性から取得するため文字列）
+ * @throws {Error} レスポンスが失敗ステータス（res.okがfalse）の場合
+ */
+async function deleteTask(id) {
+  // FastAPIから指定タスクの削除を取得
+  const res = await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
+
+  // レスポンス結果を判定
+  if (!res.ok) throw new Error(`DELETE /tasks/${id} failed: ${res.status}`);
+
+  // タスク一覧を再取得して再描画
+  await fetchTasks();
 }
 
 // ==========================================
@@ -124,6 +189,65 @@ function render(tasks) {
   const remaining = tasks.filter((task) => !task.completed).length;
   taskCount.textContent = `残り ${remaining} 件 / 全 ${tasks.length} 件`;
 }
+
+// ==========================================
+// イベントハンドラー
+// ==========================================
+
+/**
+ * タスク入力欄の送信イベントを処理する
+ *
+ * @param {SubmitEvent} event - フォーム送信のイベントオブジェクト
+ */
+function handleTaskSubmit(event) {
+  // Formの規定動作を止める（SPA用のページリロード対策）
+  event.preventDefault();
+
+  // バリデーション
+  // NOTE: 前後の空白を除去した結果が空文字なら追加しない
+  const title = taskInput.value.trim();
+  if (title === '') return;
+
+  // タスクリストを作成・保存して描画する
+  addTask(title).then(() => {
+    // タスク入力欄を空にしてフォーカスする
+    taskInput.value = '';
+    taskInput.focus();
+  });
+}
+
+/**
+ * タスクリスト内のクリックイベントを処理する（イベント移譲）
+ *
+ * NOTE: タスクリストの削除・完了切り替えを action に応じて実行する
+ * @param {MouseEvent} event - クリックイベントのオブジェクト
+ */
+function handleTaskListClick(event) {
+  // クリックされた要素の data-id と data-action を取得
+  const { id, action } = event.target.dataset;
+
+  // idが存在しない場合は何もしない
+  if (!id) return;
+
+  // actionに応じた状態更新を実行する
+  if (action === 'delete') {
+    deleteTask(id);
+  } else if (action === 'toggle') {
+    toggleTask(id, event.target.checked);
+  } else {
+    return;
+  }
+}
+
+// ==========================================
+// イベントリスナー
+// ==========================================
+
+// --- タスク入力欄 ---
+taskForm.addEventListener('submit', handleTaskSubmit);
+
+// --- タスクリストの削除・完了切り替え（イベント移譲）---
+taskList.addEventListener('click', handleTaskListClick);
 
 // ==========================================
 // 初期表示（ページ読み込み時にAPIから一覧取得）
